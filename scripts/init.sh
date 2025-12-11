@@ -354,5 +354,6 @@ sed -i "s/redir_mod=纯净模式/firewall_area=4/g" $configpath
 
 #清理路由器空间
 [ -d /data/etc_bak ] && rm -rf /data/etc_bak
+[ -d /data/usr/ ] && rm -rf /data/usr/
 
 echo -e "\033[32m脚本初始化完成,请输入\033[30;47m crash \033[0;33m命令开始使用！\033[0m"

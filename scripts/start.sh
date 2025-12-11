@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/ash
 # Copyright (C) Juewuy
 
 #初始化目录
@@ -988,7 +988,7 @@ cn_ipv6_route() { #CN-IPV6绕过
 	[ -f "$BINDIR"/cn_ipv6.txt ] && [ "$firewall_mod" = iptables ] && {
 		#ipv6
 		#see https://ispip.clang.cn/all_cn_ipv6.txt
-		echo "create cn_ip6 hash:net family inet6 hashsize 5120 maxelem 5120" >"$TMPDIR"/cn_ipv6.ipset
+		echo "create cn_ip6 hash:net family inet6 hashsize 7000 maxelem 7000" >"$TMPDIR"/cn_ipv6.ipset
 		awk '!/^$/&&!/^#/{printf("add cn_ip6 %s'" "'\n",$0)}' "$BINDIR"/cn_ipv6.txt >>"$TMPDIR"/cn_ipv6.ipset
 		ipset destroy cn_ip6 >/dev/null 2>&1
 		ipset -! restore <"$TMPDIR"/cn_ipv6.ipset
@@ -1022,7 +1022,7 @@ start_ipt_route() { #iptables-route通用工具
 		$1 $w -t $2 -A $4 -m owner --gid-owner $gid -j RETURN
 	done
 	[ "$firewall_area" = 5 ] && $1 $w -t $2 -A $4 -s $bypass_host -j RETURN
-	[ -z "$ports" ] && $1 $w -t $2 -A $4 -p tcp -m multiport --dports "$mix_port,$redir_port,$tproxy_port" -j RETURN
+	[ -z "$ports" ] && $1 $w -t $2 -A $4 -p tcp -m multiport --dports "$mix_port,$redir_port" -j RETURN
 	#跳过目标保留地址及目标本机网段
 	for ip in $HOST_IP $RESERVED_IP; do
 		$1 $w -t $2 -A $4 -d $ip -j RETURN
@@ -1845,12 +1845,12 @@ clash_check() { #clash启动前检查
 }
 singbox_check() { #singbox启动前检查
 	#检测singboxr专属功能
-	[ "$crashcore" != "singboxr" ] && [ -n "$(cat "$CRASHDIR"/jsons/*.json | grep -oE '"shadowsocksr"|"providers"')" ] && core_exchange singboxr 'singboxr内核专属功能'
+	# [ "$crashcore" != "singboxr" ] && [ -n "$(cat "$CRASHDIR"/jsons/*.json | grep -oE '"shadowsocksr"|"providers"')" ] && core_exchange singboxr 'singboxr内核专属功能'
 	core_check
-	#预下载geoip-cn.srs数据库
-	[ -n "$(cat "$CRASHDIR"/jsons/*.json | grep -oEi '"rule_set" *: *"geoip-cn"')" ] && ckgeo ruleset/geoip-cn.srs srs_geoip_cn.srs
-	#预下载cn.srs数据库
-	[ -n "$(cat "$CRASHDIR"/jsons/*.json | grep -oEi '"rule_set" *: *"cn"')" -o "$dns_mod" = "mix" ] && ckgeo ruleset/cn.srs srs_geosite_cn.srs
+	# #预下载geoip-cn.srs数据库
+	# [ -n "$(cat "$CRASHDIR"/jsons/*.json | grep -oEi '"rule_set" *: *"geoip-cn"')" ] && ckgeo ruleset/geoip-cn.srs srs_geoip_cn.srs
+	# #预下载cn.srs数据库
+	# [ -n "$(cat "$CRASHDIR"/jsons/*.json | grep -oEi '"rule_set" *: *"cn"')" -o "$dns_mod" = "mix" ] && ckgeo ruleset/cn.srs srs_geosite_cn.srs
 	return 0
 }
 network_check() { #检查是否联网
