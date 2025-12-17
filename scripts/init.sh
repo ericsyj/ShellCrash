@@ -219,7 +219,7 @@ fi
 
 #修饰文件及版本号
 command -v bash >/dev/null 2>&1 && shtype=bash
-[ -x /bin/ash ] && shtype=ash
+[ -x /bin/sh ] && shtype=ash
 for file in start.sh task.sh menu.sh; do
     sed -i "s|/bin/sh|/bin/$shtype|" ${CRASHDIR}/${file} 2>/dev/null
     chmod 755 ${CRASHDIR}/${file} 2>/dev/null

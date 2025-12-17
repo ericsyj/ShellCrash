@@ -1317,8 +1317,8 @@ getcore(){ #下载内核文件
 	echo "-----------------------------------------------"
 	echo "正在在线获取$crashcore核心文件……"
 	if [ -n "$custcorelink" ];then
-		zip_type=$(echo $custcorelink | grep -oE 'tar.gz$')
-		[ -z "$zip_type" ] && zip_type=$(echo $custcorelink | grep -oE 'gz$')
+		zip_type=$(echo $custcorelink | grep -oE 'tar.gz')
+		[ -z "$zip_type" ] && zip_type=$(echo $custcorelink | grep -oE 'gz')
 		if [ -n "$zip_type" ];then
 			${CRASHDIR}/start.sh webget ${TMPDIR}/core_new.${zip_type} "$custcorelink"
 		else

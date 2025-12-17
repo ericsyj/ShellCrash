@@ -34,8 +34,8 @@ update_core(){ #自动更新内核
 	else
 		echo "$crashcore" | grep -q 'singbox' && core_new=singbox || core_new=clash
 		if [ -n "$custcorelink" ];then
-			zip_type=$(echo $custcorelink | grep -oE 'tar.gz$')
-			[ -z "$zip_type" ] && zip_type=$(echo $custcorelink | grep -oE 'gz$')
+			zip_type=$(echo $custcorelink | grep -oE 'tar.gz')
+			[ -z "$zip_type" ] && zip_type=$(echo $custcorelink | grep -oE 'gz')
 			if [ -n "$zip_type" ];then
 				${CRASHDIR}/start.sh webget ${TMPDIR}/core_new.${zip_type} ${custcorelink}
 			fi
