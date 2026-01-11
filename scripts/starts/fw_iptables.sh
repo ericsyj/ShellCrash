@@ -32,8 +32,8 @@ start_ipt_route() { #iptables-route通用工具
     done
     [ "$firewall_area" = 5 ] && "$1" $w -t "$2" -A "$4" -s $bypass_host -j RETURN
     [ -z "$ports" ] && {
-		"$1" $w -t "$2" -A "$4" -p tcp -m multiport --dports "$mix_port,$redir_port,$tproxy_port" -j RETURN
-		"$1" $w -t "$2" -A "$4" -p udp -m multiport --dports "$mix_port,$redir_port,$tproxy_port" -j RETURN
+		"$1" $w -t "$2" -A "$4" -p tcp -m multiport --dports "$mix_port,$redir_port" -j RETURN
+		"$1" $w -t "$2" -A "$4" -p udp -m multiport --dports "$mix_port,$redir_port" -j RETURN
 	}
     #跳过目标保留地址及目标本机网段
     for ip in $HOST_IP $RESERVED_IP; do
