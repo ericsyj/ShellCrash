@@ -137,12 +137,12 @@ ckstatus() { #脚本启动前检查
         }
     done
     #检查禁用配置覆写
-    [ "$disoverride" = "1" ] && {
-        echo -e "\033[33m你已经禁用了配置文件覆写功能，这会导致大量脚本功能无法使用！\033[0m "
-        read -p "是否取消禁用？(1/0) > " res
-        [ "$res" = 1 ] && unset disoverride && setconfig disoverride
-        echo "-----------------------------------------------"
-    }
+    # [ "$disoverride" = "1" ] && {
+    #     echo -e "\033[33m你已经禁用了配置文件覆写功能，这会导致大量脚本功能无法使用！\033[0m "
+    #     read -p "是否取消禁用？(1/0) > " res
+    #     [ "$res" = 1 ] && unset disoverride && setconfig disoverride
+    #     echo "-----------------------------------------------"
+    # }
 }
 
 #主菜单
