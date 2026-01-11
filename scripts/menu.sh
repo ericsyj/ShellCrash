@@ -184,14 +184,14 @@ ckstatus() {
     done
 
     # 检查禁用配置覆写
-    [ "$disoverride" = "1" ] && {
-        comp_box "\033[33m$MENU_OVERRIDE_WARN\033[0m" \
-            "$MENU_OVERRIDE_ASK"
-        btm_box "1) $MENU_YES" \
-            "0) $MENU_NO"
-        read -p "$COMMON_INPUT> " res
-        [ "$res" = 1 ] && unset disoverride && setconfig disoverride
-    }
+    # [ "$disoverride" = "1" ] && {
+    #     comp_box "\033[33m$MENU_OVERRIDE_WARN\033[0m" \
+    #         "$MENU_OVERRIDE_ASK"
+    #     btm_box "1) $MENU_YES" \
+    #         "0) $MENU_NO"
+    #     read -p "$COMMON_INPUT> " res
+    #     [ "$res" = 1 ] && unset disoverride && setconfig disoverride
+    # }
 
     top_box "\033[30;43m$MENU_WELCOME\033[0m\t\t  Ver: $versionsh_l" \
         "$MENU_TG_CHANNEL\033[36;4mhttps://t.me/ShellClash\033[0m"
