@@ -27,6 +27,8 @@ start_nft_route() { #nftables-route通用工具
     [ "$1" = 'prerouting_vm' ] && HOST_IP="$(echo $vm_ipv4 | sed 's/[[:space:]]\+/, /g')"
     #添加新链
     nft add chain inet shellcrash $1 { type $3 hook $2 priority $4 \; }
+    #bridge 回注没有 MAC，源 IP 仍是客户端，必须在黑白名单之前放行
+    [ "$2" = 'prerouting' ] && bridge_nft_return "$1"
     [ "$1" = 'prerouting_vm' ] && nft add rule inet shellcrash $1 ip saddr != {$HOST_IP} return #仅代理虚拟机流量
     #过滤dns
     nft add rule inet shellcrash $1 tcp dport 53 return
@@ -99,6 +101,8 @@ start_nft_route() { #nftables-route通用工具
     [ "$redir_mod" = "Mix" ] && {
         nft add rule inet shellcrash $1 meta l4proto tcp mark set $((fwmark + 1))
         nft add chain inet shellcrash "$1"_mixtcp { type nat hook $2 priority -100 \; }
+        #混合模式 TCP 不进 utun，但其它 L3 入站仍可能把 TCP 送进 bridge，NAT 链要单独放行
+        [ "$2" = 'prerouting' ] && bridge_nft_return "$1"_mixtcp
         nft add rule inet shellcrash "$1"_mixtcp mark $((fwmark + 1)) meta l4proto tcp redirect to $redir_port
     }
     #nft add rule inet shellcrash local_tproxy log prefix \"pre\" level debug
@@ -111,6 +115,8 @@ start_nft_dns() { #nftables-dns
     [ "$1" = 'output' ] && HOST_IP="127.0.0.0/8, $(echo $local_ipv4 | sed 's/[[:space:]]\+/, /g')"
     [ "$1" = 'prerouting_vm' ] && HOST_IP="$(echo $vm_ipv4 | sed 's/[[:space:]]\+/, /g')"
     nft add chain inet shellcrash "$1"_dns { type nat hook $2 priority -100 \; }
+    #bridge 转发的 DNS 不能再次被劫持到本机
+    [ "$2" = 'prerouting' ] && bridge_nft_return "$1"_dns
     #过滤非dns请求
     nft add rule inet shellcrash "$1"_dns udp dport != 53 return
     nft add rule inet shellcrash "$1"_dns tcp dport != 53 return
@@ -197,6 +203,8 @@ start_nftables() { #nftables配置总入口
         }
         [ "$local_proxy" = true ] && start_nft_route output output route -150
     }
+    #放行 bridge TUN 进出转发，避免 fw4 把直连流量丢掉
+    bridge_nft_forward
     [ "$firewall_area" = 5 ] && {
         [ "$redir_mod" = "T&U旁路转发" ] && JUMP="meta l4proto {tcp, udp} mark set $fwmark" #跳转劫持的具体命令
         [ "$redir_mod" = "TCP旁路转发" ] && JUMP="meta l4proto tcp mark set $fwmark"        #跳转劫持的具体命令

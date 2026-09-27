@@ -22,6 +22,8 @@ start_ipt_route() { #iptables-route通用工具
     }
     #创建新的shellcrash链表
     "$1" $w -t "$2" -N "$4"
+    #bridge 回注没有 MAC，源 IP 仍是客户端，必须在黑白名单之前放行
+    [ "$3" = 'PREROUTING' ] && bridge_ipt_return "$1" "$w" "$2" "$4"
     #过滤dns
     "$1" $w -t "$2" -A "$4" -p tcp --dport 53 -j RETURN
     "$1" $w -t "$2" -A "$4" -p udp --dport 53 -j RETURN
@@ -108,6 +110,8 @@ start_ipt_dns() { #iptables-dns通用工具
         ip6tables -h | grep -q '\-w' && w='-w' || w=''
     }
     "$1" $w -t nat -N "$3"
+    #bridge 转发的 DNS 不能再次被劫持到本机
+    [ "$2" = 'PREROUTING' ] && bridge_ipt_return "$1" "$w" nat "$3"
     #防回环
     "$1" $w -t nat -A "$3" -m mark --mark $routing_mark -j RETURN
     [ "$2" = 'OUTPUT' ] && for gid in 453 7890; do
@@ -308,4 +312,6 @@ start_iptables() { #iptables配置总入口
             $ip6table -I INPUT -p udp --dport 443 $set_cn_ip6 -j REJECT >/dev/null 2>&1
         }
     }
+    #放行 bridge TUN 进出转发
+    bridge_ipt_forward
 }

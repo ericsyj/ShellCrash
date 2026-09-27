@@ -1,7 +1,9 @@
 #!/bin/sh
 # Copyright (C) Juewuy
 
-#获取局域网host地址
+#获取局域网host地址。bridge 接口要先识别出来，避免把 192.0.2.1/2001:db8:: 当成局域网网段。
+. "$CRASHDIR"/starts/fw_bridge.sh
+collect_bridge_ifs
 . "$CRASHDIR"/starts/fw_getlanip.sh && getlanip
 #缺省值
 [ -z "$macfilter_type" ] && macfilter_type='黑名单'

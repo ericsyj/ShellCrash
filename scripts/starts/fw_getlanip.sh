@@ -1,17 +1,19 @@
+[ -f "$CRASHDIR/starts/fw_bridge.sh" ] && . "$CRASHDIR/starts/fw_bridge.sh"
+
 getlanip() { #获取局域网host地址
     i=1
     while [ "$i" -le "20" ]; do
         #ipv4局域网网段
-        host_ipv4=$(ip route show scope link | grep -Ev 'default|wan|utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet|wgs|multicast|anycast' | awk '{print $1}')
+        host_ipv4=$(ip route show scope link | grep -Ev 'default|wan|utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet|wgs|multicast|anycast' | bridge_filter_routes | awk '{print $1}')
         #ipv6局域网网段 - 从IPv4已识别的LAN接口获取全局IPv6前缀
         [ "$ipv6_redir" = "ON" ] && {
-            lan_ifaces=$(ip route show scope link | grep -Ev 'ppp|wan|utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet|wgs|multicast|anycast' | awk '{for(i=1;i<=NF;i++) if($i=="dev") {print $(i+1); break}}' | grep -v '^lo$' | sort -u)
+            lan_ifaces=$(ip route show scope link | grep -Ev 'ppp|wan|utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet|wgs|multicast|anycast' | bridge_filter_routes | awk '{for(i=1;i<=NF;i++) if($i=="dev") {print $(i+1); break}}' | grep -v '^lo$' | sort -u)
             host_ipv6=$(
                 for iface in $lan_ifaces; do
                     ip -6 addr show dev $iface 2>/dev/null
                 done | grep 'scope global' | awk '{print $2}' | tr '\n' ' ' | sed 's/ $//'
             )
-			[ -z "$host_ipv6" ] && host_ipv6=$(ip -6 route show | grep -Ev 'default|unreachable|fe80::/|wan|ppp|utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet|wgs|multicast|anycast' | awk '{print $1}' | tr '\n' ' ' | sed 's/ $//')
+			[ -z "$host_ipv6" ] && host_ipv6=$(ip -6 route show | grep -Ev 'default|unreachable|fe80::/|wan|ppp|utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet|wgs|multicast|anycast' | bridge_filter_routes | awk '{print $1}' | tr '\n' ' ' | sed 's/ $//')
         }
         [ -f "$TMPDIR"/ShellCrash.log ] && break
         [ -n "$host_ipv4" -a "$ipv6_redir" != "ON" ] && break
@@ -42,7 +44,7 @@ getlanip() { #获取局域网host地址
     }
     host_ipv6="fe80::/10 fd00::/8 $host_ipv6$ts_host_ipv6$wg_host_ipv6"
     #获取本机出口IP地址
-    local_ipv4=$(ip route 2>&1 | grep -Ev 'utun|iot|docker|linkdown' | grep -Eo 'src.*' | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort -u)
+    local_ipv4=$(ip route 2>&1 | grep -Ev 'utun|iot|docker|linkdown' | bridge_filter_routes | grep -Eo 'src.*' | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort -u)
     [ -z "$local_ipv4" ] && local_ipv4=$(ip route 2>&1 | grep -Eo 'src.*' | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort -u)
     #保留地址
     [ -z "$reserve_ipv4" ] && reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
