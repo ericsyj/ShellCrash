@@ -258,6 +258,34 @@ set_redir_config() {
     msg_alert "\033[36m$SET_REDIR_APPLIED $redir_mod $SET_MODE_SUFFIX\033[0m"
 }
 
+apply_tproxy_mod() {
+    _tpmod=$1
+    if [ "$firewall_mod" = "iptables" ]; then
+        if [ -f /etc/init.d/qca-nss-ecm ] && [ "$systype" = "mi_snapshot" ]; then
+            read -r -p "$XIAOMI_QOS(1/0)> " res
+            [ "$res" = '1' ] && {
+                /data/shellcrash_init.sh tproxyfix
+                redir_mod=$_tpmod
+                set_redir_config
+            }
+        elif grep -qE '^TPROXY$' /proc/net/ip_tables_targets || modprobe xt_TPROXY >/dev/null 2>&1; then
+            redir_mod=$_tpmod
+            set_redir_config
+        else
+            msg_alert "\033[31m${SET_NO_MOD}iptables-mod-tproxy\033[0m" \
+                "\033[31m$SET_NO_MOD2\033[0m"
+        fi
+    elif [ "$firewall_mod" = "nftables" ]; then
+        if modprobe nft_tproxy >/dev/null 2>&1 || lsmod 2>/dev/null | grep -q nft_tproxy; then
+            redir_mod=$_tpmod
+            set_redir_config
+        else
+            msg_alert "\033[31m${SET_NO_MOD}nft_tproxy\033[0m" \
+                "\033[31m$SET_NO_MOD2\033[0m"
+        fi
+    fi
+}
+
 # 路由模式设置
 set_redir_mod() {
     while true; do
@@ -274,6 +302,7 @@ set_redir_mod() {
             content_line "2) $SET_SET_TO\033[36m$SET_REDIR_MIX\033[0m：\t$SET_REDIR_MIXDES"
             content_line "3) $SET_SET_TO\033[32m$SET_REDIR_TPROXY\033[0m：\t$SET_REDIR_TPROXYDES"
             content_line "4) $SET_SET_TO\033[33m$SET_REDIR_TUN\033[0m：\t$SET_REDIR_TUNDES"
+            content_line "10) $SET_SET_TO\033[36m$SET_REDIR_TPROXYMIX\033[0m：\t$SET_REDIR_TPROXYMIXDES"
             content_line ""
         }
         [ "$firewall_area" = 5 ] && {
@@ -305,30 +334,10 @@ set_redir_mod() {
             fi
             ;;
         3)
-            if [ "$firewall_mod" = "iptables" ]; then
-                if [ -f /etc/init.d/qca-nss-ecm ] && [ "$systype" = "mi_snapshot" ]; then
-                    read -r -p "$XIAOMI_QOS(1/0)> " res
-                    [ "$res" = '1' ] && {
-                        /data/shellcrash_init.sh tproxyfix
-                        redir_mod=Tproxy
-                        set_redir_config
-                    }
-                elif grep -qE '^TPROXY$' /proc/net/ip_tables_targets || modprobe xt_TPROXY >/dev/null 2>&1; then
-                    redir_mod=Tproxy
-                    set_redir_config
-                else
-                    msg_alert "\033[31m${SET_NO_MOD}iptables-mod-tproxy\033[0m" \
-                        "\033[31m$SET_NO_MOD2\033[0m"
-                fi
-            elif [ "$firewall_mod" = "nftables" ]; then
-                if modprobe nft_tproxy >/dev/null 2>&1 || lsmod 2>/dev/null | grep -q nft_tproxy; then
-                    redir_mod=Tproxy
-                    set_redir_config
-                else
-                    msg_alert "\033[31m${SET_NO_MOD}nft_tproxy\033[0m" \
-                        "\033[31m$SET_NO_MOD2\033[0m"
-                fi
-            fi
+            apply_tproxy_mod Tproxy
+            ;;
+        10)
+            apply_tproxy_mod TproxyMix
             ;;
         4)
             if [ -n "$sup_tun" ]; then

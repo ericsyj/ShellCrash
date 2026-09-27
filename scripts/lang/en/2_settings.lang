@@ -57,11 +57,13 @@ SET_REDIR_REDIR="Redir Mode"
 SET_REDIR_MIX="Mix Mode"
 SET_REDIR_TPROXY="Tproxy Mode"
 SET_REDIR_TUN="Tun Mode"
+SET_REDIR_TPROXYMIX="TproxyMix"
 
 SET_REDIR_REDIRDES="Redirect TCP traffic only (no UDP)"
 SET_REDIR_MIXDES="Redirect TCP via Redir, UDP via Tun"
 SET_REDIR_TPROXYDES="Tproxy forwards both TCP UDP"
 SET_REDIR_TUNDES="Tun forwards both TCP UDP (high resource usage)"
+SET_REDIR_TPROXYMIXDES="Redirect TCP via Redir, UDP via Tproxy"
 
 SET_NO_MOD="The kernel module not detected："
 SET_NO_MOD2="Please install required dependencies or select another mode!"

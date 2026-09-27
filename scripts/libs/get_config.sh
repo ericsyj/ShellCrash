@@ -4,6 +4,8 @@
 [ -f "$CRASHDIR"/configs/ShellCrash.cfg ] || . "$CRASHDIR"/init.sh >/dev/null 2>&1
 . "$CRASHDIR"/configs/command.env >/dev/null 2>&1
 . "$CRASHDIR"/configs/ShellCrash.cfg
+# 旧版 Tproxy 混合：TCP Redirect，UDP Tproxy
+[ "$redir_mod" = "Tproxy混合" ] && redir_mod=TproxyMix
 
 [ -z "$mix_port" ] && mix_port=7890
 [ -z "$redir_port" ] && redir_port=7892

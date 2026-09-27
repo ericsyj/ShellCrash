@@ -96,7 +96,8 @@ start_nft_route() { #nftables-route通用工具
     #添加通用路由
     nft add rule inet shellcrash "$1" "$JUMP"
     #处理特殊路由
-    [ "$redir_mod" = "Mix" ] && {
+    # Mix / TproxyMix 的 TCP 不进 fwmark 路由：过滤（含 CN、设备黑白名单）之后打 fwmark+1，再由 NAT 链 redirect
+    [ "$redir_mod" = "Mix" -o "$redir_mod" = "TproxyMix" ] && {
         nft add rule inet shellcrash $1 meta l4proto tcp mark set $((fwmark + 1))
         nft add chain inet shellcrash "$1"_mixtcp { type nat hook $2 priority -100 \; }
         nft add rule inet shellcrash "$1"_mixtcp mark $((fwmark + 1)) meta l4proto tcp redirect to $redir_port
@@ -181,6 +182,26 @@ start_nftables() { #nftables配置总入口
             start_nft_route output output route -150
             nft add chain inet shellcrash mark_out { type filter hook prerouting priority -100 \; }
             nft add rule inet shellcrash mark_out meta mark $fwmark meta l4proto {tcp, udp} tproxy to :$tproxy_port
+        }
+    }
+    # TCP Redirect + UDP Tproxy。过滤链与 Redir/Tproxy 相同，CN 与设备黑白名单对两种协议都生效
+    [ "$redir_mod" = "TproxyMix" ] && {
+        if modprobe nft_tproxy >/dev/null 2>&1 || lsmod 2>/dev/null | grep -q nft_tproxy; then
+            JUMP="meta l4proto udp mark set $fwmark tproxy to :$tproxy_port"
+            tp_ok=1
+        else
+            logger "当前设备内核缺少nft_tproxy模块，TproxyMix 仅启动 TCP Redirect！" 31
+            JUMP="meta l4proto udp return"
+            tp_ok=
+        fi
+        [ "$lan_proxy" = true ] && start_nft_route prerouting prerouting filter -150
+        [ "$local_proxy" = true ] && {
+            [ -n "$tp_ok" ] && JUMP="meta l4proto udp mark set $fwmark" || JUMP="meta l4proto udp return"
+            start_nft_route output output route -150
+            [ -n "$tp_ok" ] && {
+                nft add chain inet shellcrash mark_out { type filter hook prerouting priority -100 \; }
+                nft add rule inet shellcrash mark_out meta mark $fwmark meta l4proto udp tproxy to :$tproxy_port
+            }
         }
     }
     [ "$tun_statu" = true ] && {
