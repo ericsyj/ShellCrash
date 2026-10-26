@@ -1,0 +1,37 @@
+name: package
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        ref: master
+        fetch-depth: 2
+    - name: Package scripts
+      run: |
+        mkdir pack/
+        cp -rf scripts/* pack/
+        cp -rf public/*.list pack/
+        cp -f rules/singbox_providers/singbox_providers.list pack/
+        cp -f rules/clash_providers/clash_providers.list pack/
+        cp -f version pack/
+        cd pack/
+        tar -czvf ../ShellCrash.tar.gz *
+        cd ..
+        rm -rf pack/
+        cp -f ShellCrash.tar.gz bin/clashfm.tar.gz
+    - name: Commit and push if it changed
+      run: |
+        git diff
+        git config --global user.email "github-actions[bot]@example.com"
+        git config --global user.name "github-actions[bot]"
+        git add .
+        git commit --amend --no-edit
+        git push -f

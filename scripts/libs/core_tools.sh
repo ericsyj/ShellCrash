@@ -95,9 +95,9 @@ core_webget(){
         get_bin "$TMPDIR/Coretmp.$zip_type" "bin/$crashcore/${target}-linux-${cpucore}.$zip_type"
     else
         case "$custcorelink" in
-            *.tar.gz) zip_type="tar.gz" ;;
-            *.gz)     zip_type="gz" ;;
-            *.upx)    zip_type="upx" ;;
+            *.tar.gz*) zip_type="tar.gz" ;;
+            *.gz*)     zip_type="gz" ;;
+            *.upx*)    zip_type="upx" ;;
         esac
         [ -n "$zip_type" ] && webget "$TMPDIR/Coretmp.$zip_type" "$custcorelink"
     fi

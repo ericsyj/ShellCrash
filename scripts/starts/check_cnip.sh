@@ -15,7 +15,7 @@ ck_cn_ipv6() { #CN-IPV6绕过
     [ -f "$BINDIR"/cn_ipv6.txt ] && [ "$firewall_mod" = iptables ] && {
         #ipv6
         #see https://ispip.clang.cn/all_cn_ipv6.txt
-        echo "create cn_ip6 hash:net family inet6 hashsize 5120 maxelem 5120" >"$TMPDIR"/cn_ipv6.ipset
+        echo "create cn_ip6 hash:net family inet6 hashsize 7000 maxelem 7000" >"$TMPDIR"/cn_ipv6.ipset
         awk '!/^$/&&!/^#/{printf("add cn_ip6 %s'" "'\n",$0)}' "$BINDIR"/cn_ipv6.txt >>"$TMPDIR"/cn_ipv6.ipset
         ipset destroy cn_ip6 >/dev/null 2>&1
         ipset -! restore <"$TMPDIR"/cn_ipv6.ipset
