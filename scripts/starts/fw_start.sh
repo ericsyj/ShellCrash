@@ -14,7 +14,8 @@
 
 #设置策略路由
 [ "$firewall_area" != 4 ] && {
-    [ "$redir_mod" = "Tproxy" ] && ip route add local default dev lo table $table 2>/dev/null
+    # TproxyMix 的 UDP 走 tproxy，需要本地路由表；TCP 由 NAT redirect，不进这条规则
+    [ "$redir_mod" = "Tproxy" -o "$redir_mod" = "TproxyMix" ] && ip route add local default dev lo table $table 2>/dev/null
     [ "$redir_mod" = "Tun" -o "$redir_mod" = "Mix" ] && {
         i=1
         while [ -z "$(ip route list | grep utun)" -a "$i" -le 29 ]; do
@@ -32,7 +33,7 @@
 }
 #添加ipv6路由
 [ "$ipv6_redir" = "ON" -a "$firewall_area" -le 3 ] && {
-    [ "$redir_mod" = "Tproxy" ] && ip -6 route add local default dev lo table $((table + 1)) 2>/dev/null
+    [ "$redir_mod" = "Tproxy" -o "$redir_mod" = "TproxyMix" ] && ip -6 route add local default dev lo table $((table + 1)) 2>/dev/null
     [ -n "$(ip route list | grep utun)" ] && ip -6 route add default dev utun table $((table + 1)) 2>/dev/null
     [ "$redir_mod" != "Redir" ] && ip -6 rule add fwmark $fwmark table $((table + 1)) 2>/dev/null
 }

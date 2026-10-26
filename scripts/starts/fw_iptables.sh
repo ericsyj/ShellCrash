@@ -188,7 +188,7 @@ start_iptables() { #iptables配置总入口
     #启动公网访问防火墙
     [ "$fw_wan" != OFF ] && start_ipt_wan
     #分模式设置流量劫持
-    [ "$redir_mod" = "Redir" -o "$redir_mod" = "Mix" ] && {
+    [ "$redir_mod" = "Redir" -o "$redir_mod" = "Mix" -o "$redir_mod" = "TproxyMix" ] && {
         JUMP="REDIRECT --to-ports $redir_port" #跳转劫持的具体命令
         [ "$lan_proxy" = true ] && {
             start_ipt_route iptables nat PREROUTING shellcrash tcp #ipv4-局域网tcp转发
@@ -211,33 +211,39 @@ start_iptables() { #iptables配置总入口
             }
         }
     }
-    [ "$redir_mod" = "Tproxy" ] && {
+    [ "$redir_mod" = "Tproxy" -o "$redir_mod" = "TproxyMix" ] && {
         modprobe xt_TPROXY >/dev/null 2>&1
+        # Tproxy 劫持 TCP+UDP；TproxyMix 只劫持 UDP，TCP 已在上面的 NAT redirect 中处理
+        [ "$redir_mod" = "TproxyMix" ] && tp_l4=udp || tp_l4=all
         JUMP="TPROXY --on-port $tproxy_port --tproxy-mark $fwmark" #跳转劫持的具体命令
         if $iptable -j TPROXY -h 2>/dev/null | grep -q '\--on-port'; then
-            [ "$lan_proxy" = true ] && start_ipt_route iptables mangle PREROUTING shellcrash_mark all
+            [ "$lan_proxy" = true ] && start_ipt_route iptables mangle PREROUTING shellcrash_mark $tp_l4
             [ "$local_proxy" = true ] && {
                 if [ -n "$(grep -E '^MARK$' /proc/net/ip_tables_targets)" ]; then
                     JUMP="MARK --set-mark $fwmark" #跳转劫持的具体命令
-                    start_ipt_route iptables mangle OUTPUT shellcrash_mark_out all
-                    $iptable -t mangle -A PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port
+                    start_ipt_route iptables mangle OUTPUT shellcrash_mark_out $tp_l4
+                    [ "$tp_l4" = all ] && $iptable -t mangle -A PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port
                     $iptable -t mangle -A PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port
                 else
                     logger "当前设备内核可能缺少xt_mark模块支持，已放弃启动本机代理相关规则！" 31
                 fi
             }
         else
-            logger "当前设备内核可能缺少kmod_ipt_tproxy模块支持，已放弃启动相关规则！" 31
+            if [ "$redir_mod" = "TproxyMix" ]; then
+                logger "当前设备内核可能缺少kmod_ipt_tproxy模块支持，已放弃启动 UDP Tproxy，TCP Redirect 仍会生效！" 31
+            else
+                logger "当前设备内核可能缺少kmod_ipt_tproxy模块支持，已放弃启动相关规则！" 31
+            fi
         fi
         [ "$ipv6_redir" = "ON" ] && {
             if $ip6table -j TPROXY -h 2>/dev/null | grep -q '\--on-port'; then
                 JUMP="TPROXY --on-port $tproxy_port --tproxy-mark $fwmark" #跳转劫持的具体命令
-                [ "$lan_proxy" = true ] && start_ipt_route ip6tables mangle PREROUTING shellcrashv6_mark all
+                [ "$lan_proxy" = true ] && start_ipt_route ip6tables mangle PREROUTING shellcrashv6_mark $tp_l4
                 [ "$local_proxy" = true ] && {
                     if [ -n "$(grep -E '^MARK$' /proc/net/ip6_tables_targets)" ]; then
                         JUMP="MARK --set-mark $fwmark" #跳转劫持的具体命令
-                        start_ipt_route ip6tables mangle OUTPUT shellcrashv6_mark_out all
-                        $ip6table -t mangle -A PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port
+                        start_ipt_route ip6tables mangle OUTPUT shellcrashv6_mark_out $tp_l4
+                        [ "$tp_l4" = all ] && $ip6table -t mangle -A PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port
                         $ip6table -t mangle -A PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port
                     else
                         logger "当前设备内核可能缺少xt_mark模块支持，已放弃启动本机代理相关规则！" 31
@@ -303,7 +309,7 @@ start_iptables() { #iptables配置总入口
             $iptable -I FORWARD -p udp --dport 443 -o utun $set_cn_ip -j REJECT >/dev/null 2>&1
             $ip6table -I FORWARD -p udp --dport 443 -o utun $set_cn_ip6 -j REJECT >/dev/null 2>&1
         }
-        [ "$redir_mod" = "Tproxy" ] && {
+        [ "$redir_mod" = "Tproxy" -o "$redir_mod" = "TproxyMix" ] && {
             $iptable -I INPUT -p udp --dport 443 $set_cn_ip -j REJECT >/dev/null 2>&1
             $ip6table -I INPUT -p udp --dport 443 $set_cn_ip6 -j REJECT >/dev/null 2>&1
         }
